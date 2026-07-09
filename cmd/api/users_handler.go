@@ -5,51 +5,43 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"strings"
 
 	"crud-users/internal/service"
 )
 
 func registerUserRoutes(mux *http.ServeMux, userSvc *service.UserService) {
-	mux.HandleFunc("/users", func(w http.ResponseWriter, r *http.Request) {
-		if userSvc == nil {
-			writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "service unavailable"})
-			return
+	withService := func(h func(w http.ResponseWriter, r *http.Request)) http.HandlerFunc {
+		return func(w http.ResponseWriter, r *http.Request) {
+			if userSvc == nil {
+				writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "service unavailable"})
+				return
+			}
+			h(w, r)
 		}
+	}
 
-		switch r.Method {
-		case http.MethodGet:
-			listUsers(w, r, userSvc)
-		case http.MethodPost:
-			createUser(w, r, userSvc)
-		default:
-			writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "method not allowed"})
-		}
-	})
+	mux.HandleFunc("GET /users", withService(func(w http.ResponseWriter, r *http.Request) {
+		listUsers(w, r, userSvc)
+	}))
 
-	mux.HandleFunc("/users/", func(w http.ResponseWriter, r *http.Request) {
-		if userSvc == nil {
-			writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "service unavailable"})
-			return
-		}
+	mux.HandleFunc("POST /users", withService(func(w http.ResponseWriter, r *http.Request) {
+		createUser(w, r, userSvc)
+	}))
 
-		id := strings.TrimPrefix(r.URL.Path, "/users/")
-		if id == "" {
-			writeJSON(w, http.StatusNotFound, map[string]string{"error": "not found"})
-			return
-		}
+	mux.HandleFunc("GET /users/{id}", withService(func(w http.ResponseWriter, r *http.Request) {
+		id := r.PathValue("id")
+		getUser(w, r, userSvc, id)
+	}))
 
-		switch r.Method {
-		case http.MethodGet:
-			getUser(w, r, userSvc, id)
-		case http.MethodPut:
-			updateUser(w, r, userSvc, id)
-		case http.MethodDelete:
-			deleteUser(w, r, userSvc, id)
-		default:
-			writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "method not allowed"})
-		}
-	})
+	mux.HandleFunc("PUT /users/{id}", withService(func(w http.ResponseWriter, r *http.Request) {
+		id := r.PathValue("id")
+		updateUser(w, r, userSvc, id)
+	}))
+
+	mux.HandleFunc("DELETE /users/{id}", withService(func(w http.ResponseWriter, r *http.Request) {
+		id := r.PathValue("id")
+		deleteUser(w, r, userSvc, id)
+	}))
 }
 
 func createUser(w http.ResponseWriter, r *http.Request, svc *service.UserService) {
