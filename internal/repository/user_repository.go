@@ -12,7 +12,7 @@ import (
 )
 
 type UserRepository interface {
-	Create(ctx context.Context, user *models.User) error
+	Create(ctx context.Context, user *models.User) (*models.User, error)
 	List(ctx context.Context) ([]models.User, error)
 	GetByID(ctx context.Context, id string) (*models.User, error)
 	Update(ctx context.Context, id string, user models.User) error
@@ -27,13 +27,17 @@ func NewMongoUserRepository(collection *mongo.Collection) UserRepository {
 	return &mongoUserRepository{collection: collection}
 }
 
-func (r *mongoUserRepository) Create(ctx context.Context, user *models.User) error {
+func (r *mongoUserRepository) Create(ctx context.Context, user *models.User) (*models.User, error) {
 	if user.ID == "" {
 		user.ID = primitive.NewObjectID().Hex()
 	}
 
 	_, err := r.collection.InsertOne(ctx, user)
-	return err
+	if err != nil {
+		return nil, err
+	}
+
+	return user, nil
 }
 
 func (r *mongoUserRepository) List(ctx context.Context) ([]models.User, error) {

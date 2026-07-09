@@ -9,17 +9,15 @@ import (
 
 	"crud-users/internal/models"
 	"crud-users/internal/repository"
-
-	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 type CreateUserRequest struct {
-	Name string `json:"name"`
+	Name  string `json:"name"`
 	Email string `json:"email"`
 }
 
 type UpdateUserRequest struct {
-	Name string `json:"name"`
+	Name  string `json:"name"`
 	Email string `json:"email"`
 }
 
@@ -37,18 +35,18 @@ func (s *UserService) Create(ctx context.Context, req CreateUserRequest) (*model
 	}
 
 	user := &models.User{
-		ID:        primitive.NewObjectID().Hex(),
 		Name:      req.Name,
 		Email:     req.Email,
 		CreatedAt: time.Now().UTC(),
 		UpdatedAt: time.Now().UTC(),
 	}
 
-	if err := s.repo.Create(ctx, user); err != nil {
+	createdUser, err := s.repo.Create(ctx, user)
+	if err != nil {
 		return nil, err
 	}
 
-	return user, nil
+	return createdUser, nil
 }
 
 func (s *UserService) List(ctx context.Context) ([]models.User, error) {
