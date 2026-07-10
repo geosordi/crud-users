@@ -96,20 +96,13 @@ const swaggerUIHTML = `<!DOCTYPE html>
 </html>`
 
 func registerSwaggerRoutes(mux *http.ServeMux) {
-	mux.HandleFunc("/swagger", func(w http.ResponseWriter, r *http.Request) {
-		http.Redirect(w, r, "/swagger/", http.StatusMovedPermanently)
+	mux.HandleFunc("GET /swagger", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/html; charset=utf-8")
+		_, _ = w.Write([]byte(swaggerUIHTML))
 	})
 
-	mux.HandleFunc("/swagger/", func(w http.ResponseWriter, r *http.Request) {
-		switch {
-		case r.URL.Path == "/swagger/" || r.URL.Path == "/swagger/index.html":
-			w.Header().Set("Content-Type", "text/html; charset=utf-8")
-			_, _ = w.Write([]byte(swaggerUIHTML))
-		case r.URL.Path == "/swagger/doc.json":
-			w.Header().Set("Content-Type", "application/json")
-			_, _ = w.Write([]byte(swaggerSpec))
-		default:
-			http.NotFound(w, r)
-		}
+	mux.HandleFunc("GET /swagger/doc.json", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(swaggerSpec))
 	})
 }
